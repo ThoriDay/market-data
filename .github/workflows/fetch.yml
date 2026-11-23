@@ -1,0 +1,43 @@
+name: Fetch market data
+
+on:
+  schedule:
+    # Weekdays. GitHub runs on UTC and can start a scheduled run late,
+    # so there are two morning runs and one after the close.
+    - cron: "30 1 * * 1-5"   # 07:00 IST
+    - cron: "5 2 * * 1-5"    # 07:35 IST (backup)
+    - cron: "15 10 * * 1-5"  # 15:45 IST (full-day candles for the replay)
+  workflow_dispatch: {}       # lets you press "Run workflow" by hand
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fetch-market-data
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install packages
+        run: pip install yfinance pandas requests
+
+      - name: Download candles
+        run: python fetch_data.py
+
+      - name: Save to the repository
+        run: |
+          git config user.name "market-data-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data
+          git commit -m "Market data $(TZ=Asia/Kolkata date '+%Y-%m-%d %H:%M IST')" || echo "No changes"
+          git pull --rebase
+          git push
