@@ -7,6 +7,8 @@ on:
     - cron: "30 1 * * 1-5"   # 07:00 IST
     - cron: "5 2 * * 1-5"    # 07:35 IST (backup)
     - cron: "15 10 * * 1-5"  # 15:45 IST (full-day candles for the replay)
+    - cron: "16 4 * * 1-5"   # 09:46 IST
+    - cron: "22 4 * * 1-5"   # 09:52 IST (backup, GitHub can start late)
   workflow_dispatch: {}       # lets you press "Run workflow" by hand
 
 permissions:
