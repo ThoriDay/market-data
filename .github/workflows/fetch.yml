@@ -2,14 +2,21 @@ name: Fetch market data
 
 on:
   schedule:
-    # Weekdays. GitHub runs on UTC and can start a scheduled run late,
-    # so there are two morning runs and one after the close.
-    - cron: "30 1 * * 1-5"   # 07:00 IST
-    - cron: "5 2 * * 1-5"    # 07:35 IST (backup)
-    - cron: "15 10 * * 1-5"  # 15:45 IST (full-day candles for the replay)
-    - cron: "16 4 * * 1-5"   # 09:46 IST
-    - cron: "22 4 * * 1-5"   # 09:52 IST (backup, GitHub can start late)
-  workflow_dispatch: {}       # lets you press "Run workflow" by hand
+    # GitHub runs schedules in UTC, "best effort": runs on a busy shared
+    # scheduler can start hours late or be skipped (on 24-25 Nov they ran
+    # 1-10 hours late, e.g. 01:24 IST). So the morning gets several tries at
+    # odd minutes, and an outside timer (cron-job.org) triggers the run on time
+    # through workflow_dispatch below. Whichever comes first refreshes the data.
+    - cron: "17 0 * * 1-5"   # 05:47 IST (early try)
+    - cron: "43 0 * * 1-5"   # 06:13 IST
+    - cron: "11 1 * * 1-5"   # 06:41 IST
+    - cron: "37 1 * * 1-5"   # 07:07 IST
+    - cron: "3 2 * * 1-5"    # 07:33 IST (last morning try)
+    - cron: "19 4 * * 1-5"   # 09:49 IST (opening range for the 9:50 check-in)
+    - cron: "23 10 * * 1-5"  # 15:53 IST (full-day candles for the replay)
+  workflow_dispatch: {}      # "Run workflow" button, and the API call cron-job.org makes
+  repository_dispatch:
+    types: [fetch]
 
 permissions:
   contents: write
@@ -40,6 +47,6 @@ jobs:
           git config user.name "market-data-bot"
           git config user.email "actions@users.noreply.github.com"
           git add data
-          git commit -m "Market data $(TZ=Asia/Kolkata date '+%Y-%m-%d %H:%M IST')" || echo "No changes"
+          git commit -m "Market data $(TZ=Asia/Kolkata date '+%Y-%m-%d %H:%M IST') (${{ github.event_name }})" || echo "No changes"
           git pull --rebase
           git push
